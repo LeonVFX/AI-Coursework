@@ -28,10 +28,10 @@ public class UIController : MonoBehaviour
     private void Update()
     {
         playerHealth.value = gm.player.MHealth;
-        playerShield.value = gm.player.MShieldDruability;
+        playerShield.value = gm.player.MShieldDurability;
         playerKick.value = gm.player.MKickRecharge;
         aiHealth.value = gm.ai.MHealth;
-        aiShield.value = gm.ai.MShieldDruability;
+        aiShield.value = gm.ai.MShieldDurability;
         aiKick.value = gm.ai.MKickRecharge;
     }
 

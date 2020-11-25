@@ -54,7 +54,8 @@ public class Card : MonoBehaviour
 
                 break;
             case CardType.Kick:
-
+                selfPlayer.MKickRecharge = 0;
+                targetPlayer.MShieldDurability -= 2;
                 break;
             case CardType.Heal:
                 selfPlayer.MHealth += healthValue;

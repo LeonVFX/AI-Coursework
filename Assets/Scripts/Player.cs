@@ -14,7 +14,7 @@ public class Player : MonoBehaviour
 
     private int mShieldDurability;
 
-    public int MShieldDruability
+    public int MShieldDurability
     {
         get { return mShieldDurability; }
         set { mShieldDurability = value; }

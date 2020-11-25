@@ -18,7 +18,11 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        
+        // For Debugging Purposes
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            ai.GetComponent<AIAgent>().EvaluateValues();
+        }
     }
 
     private void ChangeTurn()
