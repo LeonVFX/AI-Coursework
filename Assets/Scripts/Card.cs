@@ -7,23 +7,21 @@ public class Card : MonoBehaviour
     public enum CardType
     {
         Attack,
-        Block,
+        Shield,
         Kick,
         Heal
     }
 
     [SerializeField] private CardType cardType;
-    private GameManager gm = null;
     private Player selfPlayer = null;
     private Player targetPlayer = null;
     [SerializeField] int healthValue = 1;
 
     private void Start()
     {
-        gm = FindObjectOfType<GameManager>();
-        selfPlayer = gm.player;
-        targetPlayer = gm.ai;
-        gm.OnChangeTurn += ChangeTarget;
+        selfPlayer = GameManager.GM.player;
+        targetPlayer = GameManager.GM.ai;
+        GameManager.GM.OnChangeTurn += ChangeTarget;
     }
 
     private void ChangeTarget(GameManager.WhoTurn turn)
@@ -31,12 +29,12 @@ public class Card : MonoBehaviour
         switch (turn)
         {
             case GameManager.WhoTurn.Player:
-                selfPlayer = gm.player;
-                targetPlayer = gm.ai;
+                selfPlayer = GameManager.GM.player;
+                targetPlayer = GameManager.GM.ai;
                 break;
             case GameManager.WhoTurn.AI:
-                selfPlayer = gm.ai;
-                targetPlayer = gm.player;
+                selfPlayer = GameManager.GM.ai;
+                targetPlayer = GameManager.GM.player;
                 break;
             default:
                 break;
@@ -49,8 +47,9 @@ public class Card : MonoBehaviour
         {
             case CardType.Attack:
                 targetPlayer.MHealth -= healthValue;
+                selfPlayer.MKickRecharge++;
                 break;
-            case CardType.Block:
+            case CardType.Shield:
 
                 break;
             case CardType.Kick:

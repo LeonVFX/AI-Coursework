@@ -4,6 +4,12 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    private static GameManager gm;
+    public static GameManager GM
+    {
+        get { return gm; }
+    }
+
     public event System.Action<WhoTurn> OnChangeTurn;
 
     public enum WhoTurn
@@ -16,23 +22,35 @@ public class GameManager : MonoBehaviour
     public Player player = null;
     public Player ai = null;
 
+    private void Awake()
+    {
+        if (gm != null && gm != this)
+            Destroy(this.gameObject);
+        else
+            gm = this;
+    }
+
     private void Update()
     {
         // For Debugging Purposes
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            ai.GetComponent<AIAgent>().EvaluateValues();
-        }
+        //if (Input.GetKeyDown(KeyCode.Alpha1))
+        //{
+        //    ai.GetComponent<AIAgent>().EvaluateValues();
+        //}
     }
 
-    private void ChangeTurn()
+    public void ChangeTurn()
     {
         switch (turn)
         {
             case WhoTurn.Player:
+                player.EvaluateValues();
+                ai.EvaluateValues();
                 turn = WhoTurn.AI;
                 break;
             case WhoTurn.AI:
+                player.EvaluateValues();
+                ai.EvaluateValues();
                 turn = WhoTurn.Player;
                 break;
             default:
@@ -48,11 +66,9 @@ public class GameManager : MonoBehaviour
         {
             case WhoTurn.Player:
                 player.GetComponent<CardSelection>().UseCard();
-                player.MKickRecharge++;
                 break;
             case WhoTurn.AI:
                 ai.GetComponent<CardSelection>().UseCard();
-                ai.MKickRecharge++;
                 break;
             default:
                 break;

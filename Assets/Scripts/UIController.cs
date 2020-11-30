@@ -5,7 +5,6 @@ using UnityEngine.UI;
 
 public class UIController : MonoBehaviour
 {
-    [SerializeField] private GameManager gm;
     [SerializeField] private Slider playerHealth;
     [SerializeField] private Slider playerShield;
     [SerializeField] private Slider playerKick;
@@ -16,23 +15,23 @@ public class UIController : MonoBehaviour
 
     private void Start()
     {
-        gm.OnChangeTurn += ChangeTurn;
-        playerHealth.maxValue = gm.player.maxHealth;
-        playerShield.maxValue = gm.player.maxShieldRecharge;
-        playerKick.maxValue = gm.player.maxKickRecharge;
-        aiShield.maxValue = gm.ai.maxShieldRecharge;
-        aiHealth.maxValue = gm.ai.maxHealth;
-        aiKick.maxValue = gm.ai.maxKickRecharge;
+        GameManager.GM.OnChangeTurn += ChangeTurn;
+        playerHealth.maxValue = GameManager.GM.player.maxHealth;
+        playerShield.maxValue = GameManager.GM.player.maxShieldRecharge;
+        playerKick.maxValue = GameManager.GM.player.maxKickRecharge;
+        aiShield.maxValue = GameManager.GM.ai.maxShieldRecharge;
+        aiHealth.maxValue = GameManager.GM.ai.maxHealth;
+        aiKick.maxValue = GameManager.GM.ai.maxKickRecharge;
     }
 
     private void Update()
     {
-        playerHealth.value = gm.player.MHealth;
-        playerShield.value = gm.player.MShieldDurability;
-        playerKick.value = gm.player.MKickRecharge;
-        aiHealth.value = gm.ai.MHealth;
-        aiShield.value = gm.ai.MShieldDurability;
-        aiKick.value = gm.ai.MKickRecharge;
+        playerHealth.value = GameManager.GM.player.MHealth;
+        playerShield.value = GameManager.GM.player.MShieldDurability;
+        playerKick.value = GameManager.GM.player.MKickRecharge;
+        aiHealth.value = GameManager.GM.ai.MHealth;
+        aiShield.value = GameManager.GM.ai.MShieldDurability;
+        aiKick.value = GameManager.GM.ai.MKickRecharge;
     }
 
     private void ChangeTurn(GameManager.WhoTurn turn)
