@@ -9,7 +9,9 @@ public class AIAgent : Player
     {
         None,
         Offense,
+        VeryOffensive,
         Defense,
+        VeryDefensive,
         Attack,
         Shield,
         Heal,
@@ -23,12 +25,19 @@ public class AIAgent : Player
     [Header("Player Hand")]
     [SerializeField] private Player player;
 
-    [Header("Action State Curve Defaults")]
+    [Header("Behaviour State Curves")]
     [SerializeField] private AnimationCurve veryOffensiveCurve;
     [SerializeField] private AnimationCurve offenseCurve;
     [SerializeField] private AnimationCurve defenseCurve;
     [SerializeField] private AnimationCurve veryDefensiveCurve;
 
+    [Header("Action Curves")]
+    [SerializeField] private AnimationCurve attackCurve;
+    [SerializeField] private AnimationCurve shieldCurve;
+    [SerializeField] private AnimationCurve healCurve;
+    [SerializeField] private AnimationCurve kickCurve;
+
+    // Behaviour variables
     private float[] veryOffensiveValues;
     private float[] offenseValues;
     private float[] defenseValues;
@@ -39,7 +48,18 @@ public class AIAgent : Player
     private float defenseMaxValue;
     private float veryDefensiveMaxValue;
 
-    private void Start()
+    // Action variables
+    private float[] attackValues;
+    private float[] shieldValues;
+    private float[] healValues;
+    private float[] kickValues;
+
+    private float attackMaxValue;
+    private float shieldMaxValue;
+    private float healMaxValue;
+    private float kickMaxValue;
+
+    private new void Start()
     {
         base.Start();
 
@@ -51,6 +71,11 @@ public class AIAgent : Player
         offenseValues = new float[101];
         defenseValues = new float[101];
         veryDefensiveValues = new float[101];
+
+        attackValues = new float[101];
+        shieldValues = new float[101];
+        healValues = new float[101];
+        kickValues = new float[101];
     }
 
     private void Update()
@@ -58,7 +83,7 @@ public class AIAgent : Player
         if (GameManager.GM.turn == GameManager.WhoTurn.AI)
         {
             Play();
-            //ResetValues();
+            ResetValues();
             GameManager.GM.ChangeTurn();
         }
     }
@@ -67,21 +92,31 @@ public class AIAgent : Player
     {
         if (currentAction == ActionState.None)
             EvaluateDefault();
+
         if (currentAction == ActionState.Offense)
             EvaluateOffense();
+        else if (currentAction == ActionState.VeryOffensive)
+            EvaluateVeryOffensive();
         else if (currentAction == ActionState.Defense)
             EvaluateDefense();
+        else if (currentAction == ActionState.VeryDefensive)
+            EvaluateVeryDefensive();
 
         selectedCard.UseCard();
     }
 
     private void ResetValues()
     {
+        Debug.Log($"VO: {veryOffensiveMaxValue}, O: {offenseMaxValue}, D: {defenseMaxValue}, VD: {veryDefensiveMaxValue}");
+
         // Action Default Values
         veryOffensiveMaxValue = 0.0f;
         offenseMaxValue = 0.0f;
         defenseMaxValue = 0.0f;
         veryDefensiveMaxValue = 0.0f;
+
+        // Card
+        // selectedCard = null;
 
         // State
         currentAction = ActionState.None;
@@ -110,25 +145,29 @@ public class AIAgent : Player
             offenseMaxValue = (offenseMaxValue > Min(ai.healthyValue, player.healthyValue)) ? offenseMaxValue : Min(ai.healthyValue, player.healthyValue);
 
         // Create Flat Top Charts
-        for (float i = 0.0f; i < veryOffensiveValues.Length * 0.01f; i += 0.01f)
+        for (int i = 0; i < veryOffensiveValues.Length; ++i)
         {
-            float evalatedValue = veryOffensiveCurve.Evaluate(i);
-            veryOffensiveValues[(int)(i * 100)] = (evalatedValue > veryOffensiveMaxValue) ? veryOffensiveMaxValue : evalatedValue;
+            float j = i * 0.01f;
+            float evalatedValue = veryOffensiveCurve.Evaluate(j);
+            veryOffensiveValues[i] = (evalatedValue > veryOffensiveMaxValue) ? veryOffensiveMaxValue : evalatedValue;
         }
-        for (float i = 0.0f; i < offenseValues.Length * 0.01f; i += 0.01f)
+        for (int i = 0; i < offenseValues.Length; ++i)
         {
-            float evalatedValue = offenseCurve.Evaluate(i);
-            offenseValues[(int)(i * 100)] = (evalatedValue > offenseMaxValue) ? offenseMaxValue : evalatedValue;
+            float j = i * 0.01f;
+            float evalatedValue = offenseCurve.Evaluate(j);
+            offenseValues[i] = (evalatedValue > offenseMaxValue) ? offenseMaxValue : evalatedValue;
         }
-        for (float i = 0.0f; i < defenseValues.Length * 0.01f; i += 0.01f)
+        for (int i = 0; i < defenseValues.Length; ++i)
         {
-            float evalatedValue = defenseCurve.Evaluate(i);
-            defenseValues[(int)(i * 100)] = (evalatedValue > defenseMaxValue) ? defenseMaxValue : evalatedValue;
+            float j = i * 0.01f;
+            float evalatedValue = defenseCurve.Evaluate(j);
+            defenseValues[i] = (evalatedValue > defenseMaxValue) ? defenseMaxValue : evalatedValue;
         }
-        for (float i = 0.0f; i < veryDefensiveValues.Length * 0.01f; i += 0.01f)
+        for (int i = 0; i < veryDefensiveValues.Length; ++i)
         {
-            float evalatedValue = veryDefensiveCurve.Evaluate(i);
-            veryDefensiveValues[(int)(i * 100)] = (evalatedValue > veryDefensiveMaxValue) ? veryDefensiveMaxValue : evalatedValue;
+            float j = i * 0.01f;
+            float evalatedValue = veryDefensiveCurve.Evaluate(j);
+            veryDefensiveValues[i] = (evalatedValue > veryDefensiveMaxValue) ? veryDefensiveMaxValue : evalatedValue;
         }
 
         // Deffuzify
@@ -139,14 +178,34 @@ public class AIAgent : Player
 
         float finalCrispValue = (veryOffensiveCrisp + offensiveCrisp + defensiveCrisp + veryDefensiveCrisp) / (veryOffensiveMaxValue + offenseMaxValue + defenseMaxValue + veryDefensiveMaxValue);
         Debug.Log($"Final Crisp Value: {finalCrispValue}");
+
+        // Change State
+        //if (finalCrispValue >= 80f)
+        //    currentAction = ActionState.VeryDefensive;
+        //else if (finalCrispValue >= 50f)
+        //    currentAction = ActionState.Defense;
+        //else if (finalCrispValue >= 20f)
+        //    currentAction = ActionState.Offense;
+        //else
+        //    currentAction = ActionState.VeryOffensive;
     }
 
     private void EvaluateOffense()
     {
 
     }
+    
+    private void EvaluateVeryOffensive()
+    {
+
+    }
 
     private void EvaluateDefense()
+    {
+
+    }
+
+    private void EvaluateVeryDefensive()
     {
 
     }

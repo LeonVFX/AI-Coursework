@@ -25,13 +25,16 @@ public class CardSelection : MonoBehaviour
             {
                 if (hit.transform.GetComponent<Rigidbody>() != rbSelected)
                 {
-                    rbDeselected = rbSelected;
-                    prevPos = newPos;
-                    prevPos.y -= 0.05f;
-                    rbSelected = hit.transform.GetComponent<Rigidbody>();
-                    newPos = new Vector3(rbSelected.position.x, rbSelected.position.y + 0.05f, rbSelected.position.z);
-                    selectedCard = rbSelected.gameObject;
-                    moveCard = true;
+                    if (hit.transform.tag != "AICard")
+                    {
+                        rbDeselected = rbSelected;
+                        prevPos = newPos;
+                        prevPos.y -= 0.05f;
+                        rbSelected = hit.transform.GetComponent<Rigidbody>();
+                        newPos = new Vector3(rbSelected.position.x, rbSelected.position.y + 0.05f, rbSelected.position.z);
+                        selectedCard = rbSelected.gameObject;
+                        moveCard = true;
+                    }
                 }
             }
         }
