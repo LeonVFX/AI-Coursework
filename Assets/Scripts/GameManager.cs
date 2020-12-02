@@ -20,7 +20,7 @@ public class GameManager : MonoBehaviour
 
     public WhoTurn turn = WhoTurn.Player;
     public Player player = null;
-    public Player ai = null;
+    public AIAgent ai = null;
 
     private void Awake()
     {
@@ -32,11 +32,14 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        // For Debugging Purposes
-        //if (Input.GetKeyDown(KeyCode.Alpha1))
-        //{
-        //    ai.GetComponent<AIAgent>().EvaluateValues();
-        //}
+        if (player.MHealth <= 0)
+        {
+            Debug.Log("AI Wins");
+        }
+        if (ai.MHealth <= 0)
+        {
+            Debug.Log("Player Wins");
+        }
     }
 
     public void ChangeTurn()
@@ -44,13 +47,9 @@ public class GameManager : MonoBehaviour
         switch (turn)
         {
             case WhoTurn.Player:
-                player.EvaluateValues();
-                ai.EvaluateValues();
                 turn = WhoTurn.AI;
                 break;
             case WhoTurn.AI:
-                player.EvaluateValues();
-                ai.EvaluateValues();
                 turn = WhoTurn.Player;
                 break;
             default:

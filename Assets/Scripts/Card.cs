@@ -15,7 +15,7 @@ public class Card : MonoBehaviour
     [SerializeField] private CardType cardType;
     private Player selfPlayer = null;
     private Player targetPlayer = null;
-    [SerializeField] int healthValue = 1;
+    [SerializeField] int effectValue = 1;
 
     private void Start()
     {
@@ -46,18 +46,22 @@ public class Card : MonoBehaviour
         switch (cardType)
         {
             case CardType.Attack:
-                targetPlayer.MHealth -= healthValue;
-                selfPlayer.MKickRecharge++;
+                targetPlayer.MHealth -= (effectValue - targetPlayer.MShieldDurability);
+                selfPlayer.MKickRecharge = (selfPlayer.MKickRecharge >= selfPlayer.maxKickRecharge) ? selfPlayer.maxKickRecharge : selfPlayer.MKickRecharge + 1;
                 break;
             case CardType.Shield:
-
+                selfPlayer.MShieldDurability = (selfPlayer.MShieldDurability >= selfPlayer.maxShieldDurability) ? selfPlayer.maxShieldDurability : selfPlayer.MShieldDurability + effectValue;
                 break;
             case CardType.Kick:
+                int result = targetPlayer.MShieldDurability - (selfPlayer.MKickRecharge * effectValue);
+                if (result <= 0)
+                    targetPlayer.MShieldDurability = 0;
+                else
+                    targetPlayer.MShieldDurability = result;
                 selfPlayer.MKickRecharge = 0;
-                targetPlayer.MShieldDurability -= 2;
                 break;
             case CardType.Heal:
-                selfPlayer.MHealth += healthValue;
+                selfPlayer.MHealth = (selfPlayer.MHealth >= selfPlayer.maxHealth) ? selfPlayer.maxHealth : selfPlayer.MHealth + effectValue;
                 break;
             default:
                 break;

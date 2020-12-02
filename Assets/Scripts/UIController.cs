@@ -17,9 +17,9 @@ public class UIController : MonoBehaviour
     {
         GameManager.GM.OnChangeTurn += ChangeTurn;
         playerHealth.maxValue = GameManager.GM.player.maxHealth;
-        playerShield.maxValue = GameManager.GM.player.maxShieldRecharge;
+        playerShield.maxValue = GameManager.GM.player.maxShieldDurability;
         playerKick.maxValue = GameManager.GM.player.maxKickRecharge;
-        aiShield.maxValue = GameManager.GM.ai.maxShieldRecharge;
+        aiShield.maxValue = GameManager.GM.ai.maxShieldDurability;
         aiHealth.maxValue = GameManager.GM.ai.maxHealth;
         aiKick.maxValue = GameManager.GM.ai.maxKickRecharge;
     }

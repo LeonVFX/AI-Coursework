@@ -30,8 +30,8 @@ public class Player : MonoBehaviour
 
     [Header("Max Amount of Stats")]
     public int maxHealth = 100;
-    public int maxShieldRecharge = 100;
-    public int maxKickRecharge = 100;
+    public int maxShieldDurability = 10;
+    public int maxKickRecharge = 3;
 
     #region Fuzzy Values
     [Header("Health Attributes")]
@@ -75,7 +75,7 @@ public class Player : MonoBehaviour
 
     [Header("Cards")]
     [SerializeField] protected GameObject attackCard;
-    [SerializeField] protected GameObject blockCard;
+    [SerializeField] protected GameObject shieldCard;
     [SerializeField] protected GameObject kickCard;
     [SerializeField] protected GameObject healCard;
 
@@ -85,7 +85,7 @@ public class Player : MonoBehaviour
     protected void Start()
     {
         mHealth = maxHealth;
-        mShieldDurability = maxShieldRecharge;
+        mShieldDurability = 0;
         mKickRecharge = 0;
     }
 
@@ -101,7 +101,7 @@ public class Player : MonoBehaviour
         //Debug.Log($"Hurt: {hurtValue}");
         //Debug.Log($"Healthy: {healthyValue}");
 
-        aiTime = (float)MShieldDurability / (float)maxShieldRecharge;
+        aiTime = (float)MShieldDurability / (float)maxShieldDurability;
 
         brokenValue = broken.Evaluate(aiTime);
         damagedValue = damaged.Evaluate(aiTime);

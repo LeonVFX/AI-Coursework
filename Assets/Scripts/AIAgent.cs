@@ -18,8 +18,8 @@ public class AIAgent : Player
         Kick
     }
 
-    private Player ai;
-    private CardSelection selectedCard;
+    private AIAgent ai;
+    private Card selectedCard;
     private ActionState currentAction;
 
     [Header("Player Hand")]
@@ -63,8 +63,8 @@ public class AIAgent : Player
     {
         base.Start();
 
-        ai = GetComponent<Player>();
-        selectedCard = GetComponent<CardSelection>();
+        ai = GetComponent<AIAgent>();
+        selectedCard = GetComponent<Card>();
 
         // Arrays - 101 slots to accomodate 2 decimal point values for a broader range of values for Deffuzification.
         veryOffensiveValues = new float[101];
@@ -82,6 +82,9 @@ public class AIAgent : Player
     {
         if (GameManager.GM.turn == GameManager.WhoTurn.AI)
         {
+            player.EvaluateValues();
+            ai.EvaluateValues();
+
             Play();
             ResetValues();
             GameManager.GM.ChangeTurn();
@@ -109,14 +112,20 @@ public class AIAgent : Player
     {
         Debug.Log($"VO: {veryOffensiveMaxValue}, O: {offenseMaxValue}, D: {defenseMaxValue}, VD: {veryDefensiveMaxValue}");
 
-        // Action Default Values
+        // Behaviour Default Values
         veryOffensiveMaxValue = 0.0f;
         offenseMaxValue = 0.0f;
         defenseMaxValue = 0.0f;
         veryDefensiveMaxValue = 0.0f;
 
+        // Action Default Values
+        attackMaxValue = 0.0f;
+        shieldMaxValue = 0.0f;
+        healMaxValue = 0.0f;
+        kickMaxValue = 0.0f;
+
         // Card
-        // selectedCard = null;
+        selectedCard = null;
 
         // State
         currentAction = ActionState.None;
@@ -177,37 +186,221 @@ public class AIAgent : Player
         float veryDefensiveCrisp = Deffuzify(veryDefensiveValues);
 
         float finalCrispValue = (veryOffensiveCrisp + offensiveCrisp + defensiveCrisp + veryDefensiveCrisp) / (veryOffensiveMaxValue + offenseMaxValue + defenseMaxValue + veryDefensiveMaxValue);
-        Debug.Log($"Final Crisp Value: {finalCrispValue}");
+        // Debug.Log($"Final Crisp Value: {finalCrispValue}");
 
         // Change State
-        //if (finalCrispValue >= 80f)
-        //    currentAction = ActionState.VeryDefensive;
-        //else if (finalCrispValue >= 50f)
-        //    currentAction = ActionState.Defense;
-        //else if (finalCrispValue >= 20f)
-        //    currentAction = ActionState.Offense;
-        //else
-        //    currentAction = ActionState.VeryOffensive;
+        if (finalCrispValue >= 75f)
+            currentAction = ActionState.VeryDefensive;
+        else if (finalCrispValue >= 35f)
+            currentAction = ActionState.Defense;
+        else if (finalCrispValue >= 20f)
+            currentAction = ActionState.Offense;
+        else
+            currentAction = ActionState.VeryOffensive;
     }
 
     private void EvaluateOffense()
     {
+        // IF THEN Values
+        if (ai.EXHAUSTED && player.BROKEN)
+            attackMaxValue = (attackMaxValue > Min(ai.exhaustedValue, player.brokenValue)) ? attackMaxValue : Min(ai.exhaustedValue, player.brokenValue);
+        if (ai.TIRED && player.BROKEN)
+            attackMaxValue = (attackMaxValue > Min(ai.tiredValue, player.brokenValue)) ? attackMaxValue : Min(ai.tiredValue, player.brokenValue);
+        if (ai.ENERGETIC && player.BROKEN)
+            attackMaxValue = (attackMaxValue > Min(ai.energeticValue, player.brokenValue)) ? attackMaxValue : Min(ai.energeticValue, player.brokenValue);
+        if (ai.EXHAUSTED && player.DAMAGED)
+            attackMaxValue = (attackMaxValue > Min(ai.exhaustedValue, player.damagedValue)) ? attackMaxValue : Min(ai.exhaustedValue, player.damagedValue);
+        if (ai.TIRED && player.DAMAGED)
+            attackMaxValue = (attackMaxValue > Min(ai.tiredValue, player.damagedValue)) ? attackMaxValue : Min(ai.tiredValue, player.damagedValue);
+        if (ai.ENERGETIC && player.DAMAGED)
+            kickMaxValue = (kickMaxValue > Min(ai.energeticValue, player.damagedValue)) ? kickMaxValue : Min(ai.energeticValue, player.damagedValue);
+        if (ai.EXHAUSTED && player.ASNEW)
+            attackMaxValue = (attackMaxValue > Min(ai.exhaustedValue, player.asNewValue)) ? attackMaxValue : Min(ai.exhaustedValue, player.asNewValue);
+        if (ai.TIRED && player.ASNEW)
+            kickMaxValue = (kickMaxValue > Min(ai.tiredValue, player.asNewValue)) ? kickMaxValue : Min(ai.tiredValue, player.asNewValue);
+        if (ai.ENERGETIC && player.ASNEW)
+            kickMaxValue = (kickMaxValue > Min(ai.energeticValue, player.asNewValue)) ? kickMaxValue : Min(ai.energeticValue, player.asNewValue);
 
+        // Create Flat Top Charts
+        for (int i = 0; i < attackValues.Length; ++i)
+        {
+            float j = i * 0.01f;
+            float evalatedValue = attackCurve.Evaluate(j);
+            attackValues[i] = (evalatedValue > attackMaxValue) ? attackMaxValue : evalatedValue;
+        }
+        for (int i = 0; i < kickValues.Length; ++i)
+        {
+            float j = i * 0.01f;
+            float evalatedValue = kickCurve.Evaluate(j);
+            kickValues[i] = (evalatedValue > kickMaxValue) ? kickMaxValue : evalatedValue;
+        }
+
+        // Deffuzify
+        float attackCrisp = Deffuzify(attackValues);
+        float kickCrisp = Deffuzify(kickValues);
+
+        float finalCrispValue = (attackCrisp + kickCrisp) / (attackMaxValue + kickMaxValue);
+
+        Debug.Log($"Final Crisp Value: {finalCrispValue}");
+
+        // Change State
+        if (finalCrispValue >= 50f)
+            selectedCard = ai.kickCard.GetComponent<Card>();
+        else
+            selectedCard = ai.attackCard.GetComponent<Card>();
     }
     
     private void EvaluateVeryOffensive()
     {
+        // IF THEN Values
+        if (ai.EXHAUSTED && player.BROKEN)
+            attackMaxValue = (attackMaxValue > Min(ai.exhaustedValue, player.brokenValue)) ? attackMaxValue : Min(ai.exhaustedValue, player.brokenValue);
+        if (ai.TIRED && player.BROKEN)
+            attackMaxValue = (attackMaxValue > Min(ai.tiredValue, player.brokenValue)) ? attackMaxValue : Min(ai.tiredValue, player.brokenValue);
+        if (ai.ENERGETIC && player.BROKEN)
+            attackMaxValue = (attackMaxValue > Min(ai.energeticValue, player.brokenValue)) ? attackMaxValue : Min(ai.energeticValue, player.brokenValue);
+        if (ai.EXHAUSTED && player.DAMAGED)
+            attackMaxValue = (attackMaxValue > Min(ai.exhaustedValue, player.damagedValue)) ? attackMaxValue : Min(ai.exhaustedValue, player.damagedValue);
+        if (ai.TIRED && player.DAMAGED)
+            attackMaxValue = (attackMaxValue > Min(ai.tiredValue, player.damagedValue)) ? attackMaxValue : Min(ai.tiredValue, player.damagedValue);
+        if (ai.ENERGETIC && player.DAMAGED)
+            attackMaxValue = (attackMaxValue > Min(ai.energeticValue, player.damagedValue)) ? attackMaxValue : Min(ai.energeticValue, player.damagedValue);
+        if (ai.EXHAUSTED && player.ASNEW)
+            attackMaxValue = (attackMaxValue > Min(ai.exhaustedValue, player.asNewValue)) ? attackMaxValue : Min(ai.exhaustedValue, player.asNewValue);
+        if (ai.TIRED && player.ASNEW)
+            attackMaxValue = (attackMaxValue > Min(ai.tiredValue, player.asNewValue)) ? attackMaxValue : Min(ai.tiredValue, player.asNewValue);
+        if (ai.ENERGETIC && player.ASNEW)
+            kickMaxValue = (kickMaxValue > Min(ai.energeticValue, player.asNewValue)) ? kickMaxValue : Min(ai.energeticValue, player.asNewValue);
 
+        // Create Flat Top Charts
+        for (int i = 0; i < attackValues.Length; ++i)
+        {
+            float j = i * 0.01f;
+            float evalatedValue = attackCurve.Evaluate(j);
+            attackValues[i] = (evalatedValue > attackMaxValue) ? attackMaxValue : evalatedValue;
+        }
+        for (int i = 0; i < kickValues.Length; ++i)
+        {
+            float j = i * 0.01f;
+            float evalatedValue = kickCurve.Evaluate(j);
+            kickValues[i] = (evalatedValue > kickMaxValue) ? kickMaxValue : evalatedValue;
+        }
+
+        // Deffuzify
+        float attackCrisp = Deffuzify(attackValues);
+        float kickCrisp = Deffuzify(kickValues);
+
+        float finalCrispValue = (attackCrisp + kickCrisp) / (attackMaxValue + kickMaxValue);
+
+        Debug.Log($"Final Crisp Value: {finalCrispValue}");
+
+        // Change State
+        if (finalCrispValue >= 50f)
+            selectedCard = ai.kickCard.GetComponent<Card>();
+        else
+            selectedCard = ai.attackCard.GetComponent<Card>();
     }
 
     private void EvaluateDefense()
     {
+        // IF THEN Values
+        if (ai.BROKEN && player.EXHAUSTED)
+            shieldMaxValue = (shieldMaxValue > Min(ai.brokenValue, player.exhaustedValue)) ? shieldMaxValue : Min(ai.brokenValue, player.exhaustedValue);
+        if (ai.DAMAGED && player.EXHAUSTED)
+            shieldMaxValue = (shieldMaxValue > Min(ai.damagedValue, player.exhaustedValue)) ? shieldMaxValue : Min(ai.damagedValue, player.exhaustedValue);
+        if (ai.ASNEW && player.EXHAUSTED)
+            healMaxValue = (healMaxValue > Min(ai.asNewValue, player.exhaustedValue)) ? healMaxValue : Min(ai.asNewValue, player.exhaustedValue);
+        if (ai.BROKEN && player.TIRED)
+            shieldMaxValue = (shieldMaxValue > Min(ai.brokenValue, player.tiredValue)) ? shieldMaxValue : Min(ai.brokenValue, player.tiredValue);
+        if (ai.DAMAGED && player.TIRED)
+            healMaxValue = (healMaxValue > Min(ai.damagedValue, player.tiredValue)) ? healMaxValue : Min(ai.damagedValue, player.tiredValue);
+        if (ai.ASNEW && player.TIRED)
+            healMaxValue = (healMaxValue > Min(ai.asNewValue, player.tiredValue)) ? healMaxValue : Min(ai.asNewValue, player.tiredValue);
+        if (ai.BROKEN && player.ENERGETIC)
+            healMaxValue = (healMaxValue > Min(ai.brokenValue, player.energeticValue)) ? healMaxValue : Min(ai.brokenValue, player.energeticValue);
+        if (ai.DAMAGED && player.ENERGETIC)
+            healMaxValue = (healMaxValue > Min(ai.damagedValue, player.energeticValue)) ? healMaxValue : Min(ai.damagedValue, player.energeticValue);
+        if (ai.ASNEW && player.ENERGETIC)
+            healMaxValue = (healMaxValue > Min(ai.asNewValue, player.energeticValue)) ? healMaxValue : Min(ai.asNewValue, player.energeticValue);
 
+        // Create Flat Top Charts
+        for (int i = 0; i < shieldValues.Length; ++i)
+        {
+            float j = i * 0.01f;
+            float evalatedValue = shieldCurve.Evaluate(j);
+            shieldValues[i] = (evalatedValue > shieldMaxValue) ? shieldMaxValue : evalatedValue;
+        }
+        for (int i = 0; i < healValues.Length; ++i)
+        {
+            float j = i * 0.01f;
+            float evalatedValue = healCurve.Evaluate(j);
+            healValues[i] = (evalatedValue > healMaxValue) ? healMaxValue : evalatedValue;
+        }
+
+        // Deffuzify
+        float shieldCrisp = Deffuzify(shieldValues);
+        float healCrisp = Deffuzify(healValues);
+
+        float finalCrispValue = (shieldCrisp + healCrisp) / (shieldMaxValue + healMaxValue);
+
+        Debug.Log($"Final Crisp Value: {finalCrispValue}");
+
+        // Change State
+        if (finalCrispValue >= 50f)
+            selectedCard = ai.healCard.GetComponent<Card>();
+        else
+            selectedCard = ai.shieldCard.GetComponent<Card>();
     }
 
     private void EvaluateVeryDefensive()
     {
+        // IF THEN Values
+        if (ai.BROKEN && player.EXHAUSTED)
+            shieldMaxValue = (shieldMaxValue > Min(ai.brokenValue, player.exhaustedValue)) ? shieldMaxValue : Min(ai.brokenValue, player.exhaustedValue);
+        if (ai.DAMAGED && player.EXHAUSTED)
+            healMaxValue = (healMaxValue > Min(ai.damagedValue, player.exhaustedValue)) ? healMaxValue : Min(ai.damagedValue, player.exhaustedValue);
+        if (ai.ASNEW && player.EXHAUSTED)
+            healMaxValue = (healMaxValue > Min(ai.asNewValue, player.exhaustedValue)) ? healMaxValue : Min(ai.asNewValue, player.exhaustedValue);
+        if (ai.BROKEN && player.TIRED)
+            healMaxValue = (healMaxValue > Min(ai.brokenValue, player.tiredValue)) ? healMaxValue : Min(ai.brokenValue, player.tiredValue);
+        if (ai.DAMAGED && player.TIRED)
+            healMaxValue = (healMaxValue > Min(ai.damagedValue, player.tiredValue)) ? healMaxValue : Min(ai.damagedValue, player.tiredValue);
+        if (ai.ASNEW && player.TIRED)
+            healMaxValue = (healMaxValue > Min(ai.asNewValue, player.tiredValue)) ? healMaxValue : Min(ai.asNewValue, player.tiredValue);
+        if (ai.BROKEN && player.ENERGETIC)
+            healMaxValue = (healMaxValue > Min(ai.brokenValue, player.energeticValue)) ? healMaxValue : Min(ai.brokenValue, player.energeticValue);
+        if (ai.DAMAGED && player.ENERGETIC)
+            healMaxValue = (healMaxValue > Min(ai.damagedValue, player.energeticValue)) ? healMaxValue : Min(ai.damagedValue, player.energeticValue);
+        if (ai.ASNEW && player.ENERGETIC)
+            healMaxValue = (healMaxValue > Min(ai.asNewValue, player.energeticValue)) ? healMaxValue : Min(ai.asNewValue, player.energeticValue);
 
+        // Create Flat Top Charts
+        for (int i = 0; i < shieldValues.Length; ++i)
+        {
+            float j = i * 0.01f;
+            float evalatedValue = shieldCurve.Evaluate(j);
+            shieldValues[i] = (evalatedValue > shieldMaxValue) ? shieldMaxValue : evalatedValue;
+        }
+        for (int i = 0; i < healValues.Length; ++i)
+        {
+            float j = i * 0.01f;
+            float evalatedValue = healCurve.Evaluate(j);
+            healValues[i] = (evalatedValue > healMaxValue) ? healMaxValue : evalatedValue;
+        }
+
+        // Deffuzify
+        float shieldCrisp = Deffuzify(shieldValues);
+        float healCrisp = Deffuzify(healValues);
+
+        float finalCrispValue = (shieldCrisp + healCrisp) / (shieldMaxValue + healMaxValue);
+
+        Debug.Log($"Final Crisp Value: {finalCrispValue}");
+
+        // Change State
+        if (finalCrispValue >= 50f)
+            selectedCard = ai.healCard.GetComponent<Card>();
+        else
+            selectedCard = ai.shieldCard.GetComponent<Card>();
     }
 
     /// <summary>
